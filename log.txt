@@ -1,0 +1,8 @@
+New Permission Added
+
+1. api-integration
+2. review
+3. landing-page
+4. pixel
+5. courier
+6. pathao
