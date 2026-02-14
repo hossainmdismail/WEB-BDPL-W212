@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         @csrf
                         <div class="card">
                            <div class="card-header">
-                                <h6>আপনার অর্ডারটি কনফার্ম করতে তথ্যগুলো পূরণ করে <span style="color:#695DFD;">"অর্ডার করুন"</span> বাটন এ ক্লিক করুন</h6>
+                                <h6>আপনার অর্ডারটি কনফার্ম করতে তথ্যগুলো পূরণ করে <span style="color:#fe88af;">"অর্ডার করুন"</span> বাটন এ ক্লিক করুন</h6>
 
                             </div>
                             <div class="card-body">

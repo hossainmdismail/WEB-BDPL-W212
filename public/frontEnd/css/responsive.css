@@ -103,12 +103,12 @@
     }
 
     .filter_sidebar.active::-webkit-scrollbar-thumb {
-        background-color: #695DFD;
+        background-color: #fe88af;
     }
 
     .filter_btn {
         display: inline-block;
-        background: #695DFD;
+        background: #fe88af;
         color: #fff;
         width: 55px;
         height: 33px;
@@ -121,7 +121,7 @@
     }
 
     .filter_close {
-        background: #695DFD;
+        background: #fe88af;
         padding: 10px 15px;
         font-size: 18px;
         color: #fff;
@@ -138,7 +138,7 @@
     li.mobile_home {
         border: 2px solid #ddd;
         margin-top: -35px;
-        background: #695DFD;
+        background: #fe88af;
         padding-top: 15px;
         border-radius: 50%;
         width: 75px;
@@ -271,7 +271,7 @@
     }
 
     .mobile-menu::-webkit-scrollbar-thumb {
-        background-color: #695DFD;
+        background-color: #fe88af;
     }
 
     .mobile-search {
@@ -284,7 +284,7 @@
         display: flex;
         border: 1px solid;
         border-radius: 5px;
-        background-color: #695DFD;
+        background-color: #fe88af;
         height: 40px;
         overflow: hidden;
         position: relative;
@@ -304,7 +304,7 @@
     }
 
     .mobile-search form button {
-        background-color: #695DFD;
+        background-color: #fe88af;
         flex: 0 0 60px;
         position: absolute;
         right: 0;
@@ -683,7 +683,7 @@
     .menu-bag .margin-shopping span {
         position: absolute;
         display: inline-block;
-        background-color: #695DFD;
+        background-color: #fe88af;
         height: 20px;
         border-radius: 50px;
         padding: 1px 7px;
