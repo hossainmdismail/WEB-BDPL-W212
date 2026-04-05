@@ -109,9 +109,9 @@ Route::group(['prefix'=>'customer','namespace'=>'Frontend', 'middleware' => ['ip
 
    Route::get('/order-track', [CustomerController::class, 'order_track'])->name('customer.order_track');
     Route::get('/order-track/result', [CustomerController::class, 'order_track_result'])->name('customer.order_track_result');
-
-
 });
+
+
 // customer auth
 Route::group(['prefix'=>'customer','namespace'=>'Frontend','middleware' => ['customer','ipcheck','check_refer']], function() {
 
