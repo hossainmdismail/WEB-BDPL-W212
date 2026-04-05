@@ -321,9 +321,16 @@ class CustomerController extends Controller
             ->where('created_at', '>=', now()->subHour())
             ->exists();
 
+        // if ($recentOrder) {
+        //     return back()->with('error', '❗ দুঃখিত! আপনার একটি অর্ডার ইতিমধ্যে চলমান আছে। ওই অর্ডারটি সম্পন্ন না হওয়া পর্যন্ত একই তথ্য দিয়ে নতুন অর্ডার করা যাবে না। কোনো সহায়তা প্রয়োজন হলে আমাদের হোয়াটসঅ্যাপ অথাবা ইনবক্স করুন।');
+        // }
         if ($recentOrder) {
-            return back()->with('error', '❗ দুঃখিত! আপনার একটি অর্ডার ইতিমধ্যে চলমান আছে। ওই অর্ডারটি সম্পন্ন না হওয়া পর্যন্ত একই তথ্য দিয়ে নতুন অর্ডার করা যাবে না। কোনো সহায়তা প্রয়োজন হলে আমাদের হোয়াটসঅ্যাপ অথাবা ইনবক্স করুন।');
-        }
+    $whatsappNumber = '8801941281457'; // আপনার নম্বর
+    $whatsappMessage = urlencode('আমার অর্ডার সম্পর্কে সহায়তা দরকার।');
+    $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
+
+    return back()->with('error', '❗ ! <b>আপনার একটি অর্ডার এখনও সম্পন্ন হয়নি।</b> নতুন অর্ডার করতে নিচের মাধ্যমে যোগাযোগ করুন। <br> <a href="' . $whatsappLink . '" target="_blank" style="color:#25D366;font-weight:bold;">Whatsapp</a>');
+}
 
         // Save Order, Shipping, Payment, Order Details
         DB::transaction(function () use ($request, $customer_id, $subtotal, $discount, $shippingfee, $shipping_area, &$order) {

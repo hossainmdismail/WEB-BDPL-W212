@@ -252,6 +252,16 @@ document.addEventListener("DOMContentLoaded", function() {
                             </table>
                         </div>
                     </div>
+                    @if (session('error'))
+                        <div id="order-error" class="alert alert-danger mt-10">
+                            {!! session('error') !!}
+                        </div>
+                        <script>
+                            document.getElementById('order-error').scrollIntoView({
+                                behavior: 'smooth'
+                            });
+                        </script>
+                    @endif
                 </div>
             </div>
             <!-- col end -->
