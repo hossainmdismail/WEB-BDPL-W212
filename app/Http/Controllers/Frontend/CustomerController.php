@@ -329,7 +329,7 @@ class CustomerController extends Controller
     $whatsappMessage = urlencode('আমার অর্ডার সম্পর্কে সহায়তা দরকার।');
     $whatsappLink = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
 
-    return back()->with('error', '❗ ! <b>আপনার একটি অর্ডার এখনও সম্পন্ন হয়নি।</b> নতুন অর্ডার করতে নিচের মাধ্যমে যোগাযোগ করুন। <br> <a href="' . $whatsappLink . '" target="_blank" style="color:#25D366;font-weight:bold;">Whatsapp</a>');
+    return back()->with('error', '❗ ! <b>আপনার একটি অর্ডার এখনও সম্পন্ন হয়নি।</b> নতুন অর্ডার করতে যোগাযোগ করুন। <a href="' . $whatsappLink . '" target="_blank" style="color:#25D366;font-weight:bold;">Whatsapp</a>');
 }
 
         // Save Order, Shipping, Payment, Order Details
