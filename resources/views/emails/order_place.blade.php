@@ -14,7 +14,7 @@
        @endphp
     <!-- email template -->
     <table class="body-wrap" style="background:#fff; width: 100%; margin: 0;">
-        <tbody style="background:#4DBC60;">
+        <tbody style="background:#fe88af;">
             <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 25px; margin: 0;border:0">
                 <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                    <h3 style="color:#fff;text-align:center;padding:20px 0">Your Order Number: #{{$order->invoice_id}}</h3>
@@ -47,7 +47,7 @@
         <tbody>
             <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 25px; margin: 0;border:0">
                 <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                   <h3 style="color:#4DBC60;padding-bottom:10px">[Order # {{$order->invoice_id}}] ({{$order->created_at->format('d M Y')}})</h3>
+                   <h3 style="color:#fe88af;padding-bottom:10px">[Order # {{$order->invoice_id}}] ({{$order->created_at->format('d M Y')}})</h3>
                  </td>
             </tr>
         </tbody>
@@ -70,7 +70,7 @@
             @endforeach
        </tbody>
     </table>
-    
+
     <table style="width:100%;border: 0px ;padding:0 30px">
        <tbody>
             <tr>
@@ -88,7 +88,7 @@
                 <td style="border:1px solid #ddd;padding:10px;width:33.33%;border-top: 0px solid #fff;border-left: 0px solid #fff;"></td>
                 <td style="border:1px solid #ddd;padding:10px;width:33.33%;border-top: 0px solid #fff;">{{$order->payment?$order->payment->payment_method:''}}</td>
             </tr>
-            
+
             <tr>
                 <td style="border:1px solid #ddd;padding:10px;width:33.33%;border-top: 0px solid #fff;border-right: 0px solid #fff;font-weight:800">Total</td>
                 <td style="border:1px solid #ddd;padding:10px;width:33.33%;border-top: 0px solid #fff;border-left: 0px solid #fff;"></td>
@@ -100,7 +100,7 @@
     <table style="padding:10px 0px;margin-bottom:25px;text-align:center !important;width:100%">
         <tbody>
             <tr>
-                <td style="padding:20px 0;font-weight:800;color:#4DBC60;font-size:22px">Billing Address</td>
+                <td style="padding:20px 0;font-weight:800;color:#fe88af;font-size:22px">Billing Address</td>
             </tr>
             <tr><td>{{$order->shipping?$order->shipping->name:''}}</td></tr>
             <tr><td>{{$order->shipping?$order->shipping->phone:''}}</td></tr>
@@ -111,17 +111,17 @@
         <tbody>
             <tr>
                 <td>
-                    <ul style="padding:0 !important">                       
+                    <ul style="padding:0 !important">
         				<li style="list-style: none; margin: 0 5px; height: 40px; width: 40px; text-align: center; line-height: 40px; background: #4551F7; border-radius: 50px;float:left !important"><a href="https://www.facebook.com/websolutionitcom/"><img src="https://giftshopbd.websolutionit.com/public/frontEnd/images/facebook-f-brands.png"  style="margin-top: 8px;height: 25px;" /></a></li>
-        				                    
-        				<li style="list-style: none; margin: 0 5px; height: 40px; width: 40px; text-align: center; line-height: 40px; background: #4DBC60; border-radius: 50px;float:left !important"><a href="https://wa.link/zw696d"><img src="https://giftshopbd.websolutionit.com/public/frontEnd/images/whatsapp-brands.png" style="margin-top: 8px;height: 25px;" /></a></li>
+
+        				<li style="list-style: none; margin: 0 5px; height: 40px; width: 40px; text-align: center; line-height: 40px; background: #fe88af; border-radius: 50px;float:left !important"><a href="https://wa.link/zw696d"><img src="https://giftshopbd.websolutionit.com/public/frontEnd/images/whatsapp-brands.png" style="margin-top: 8px;height: 25px;" /></a></li>
         			</ul>
     			</td>
 			</tr>
         </tbody>
     </table>
     <table class="body-wrap" style="background:#fff; width: 100%; margin: 0;text-align:center !important">
-        <tbody style="background:#4DBC60;">
+        <tbody style="background:#fe88af;">
             <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box;  margin: 0;border:0">
                 <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; margin: 0;">
                    <p style="color:#fff;text-align:center;padding:20px 0;font-size:15px;letter-spacing:2px">@copyright {{date('Y')}} Giftshopbd</p>
@@ -129,7 +129,7 @@
             </tr>
         </tbody>
     </table>
-    
+
 </div>
 </div>
 </body>

@@ -14,7 +14,7 @@
     td{
         font-size: 16px;
     }
-   @page { 
+   @page {
     margin:0px;
     }
    @media print {
@@ -60,7 +60,7 @@
                                 </div>
                             </td>
                             <td  style="width:60%;float: left;">
-                                <div class="invoice-bar" style=" background: #4DBC60; transform: skew(38deg); width: 100%; margin-left: 65px; padding: 20px 60px; ">
+                                <div class="invoice-bar" style=" background: #fe88af; transform: skew(38deg); width: 100%; margin-left: 65px; padding: 20px 60px; ">
                                     <p style="font-size: 30px; color: #fff; transform: skew(-38deg); text-transform: uppercase; text-align: right; font-weight: bold;">Invoice</p>
                                 </div>
                                 <div class="invoice-bar" style="background: #fff; transform: skew(36deg); width: 72%; margin-left: 182px; padding: 12px 32px; margin-top: 6px;">
@@ -78,7 +78,7 @@
                         </tr>
                     </table>
                     <table class="table" style="margin-top: 30px;margin-bottom: 0;">
-                        <thead style="background: #4DBC60; color: #fff;">
+                        <thead style="background: #fe88af; color: #fff;">
                             <tr>
                                 <th>SL</th>
                                 <th>Product</th>
@@ -100,7 +100,7 @@
                         </tbody>
                     </table>
                     <div class="invoice-bottom">
-                        
+
                         <table class="table" style="width: 300px; float: right;    margin-bottom: 30px;">
                             <tbody style="background:#f1f9f8">
                                 <tr>
@@ -115,7 +115,7 @@
                                     <td><strong>Discount(-)</strong></td>
                                     <td><strong>৳{{$order->discount}}</strong></td>
                                 </tr>
-                                <tr style="background:#4DBC60;color:#fff">
+                                <tr style="background:#fe88af;color:#fff">
                                     <td><strong>Final Total</strong></td>
                                     <td><strong>৳{{$order->amount}}</strong></td>
                                 </tr>

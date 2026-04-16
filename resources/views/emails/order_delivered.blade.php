@@ -10,12 +10,12 @@
 <div style="background:#ddd; width:100%;text-align:center !important">
 <div style="background:#fff; width:90%;margin:0 auto !important">
      @php
-     
+
         $order = App\Models\Order::where('id',$order_id)->with('orderdetails','payment','shipping','customer')->first();
        @endphp
     <!-- email template -->
     <table class="body-wrap" style="background:#fff; width: 100%; margin: 0;">
-        <tbody style="background:#4DBC60;">
+        <tbody style="background:#fe88af;">
             <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 25px; margin: 0;border:0">
                 <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                    <h3 style="color:#fff;text-align:center;padding:20px 0">Your Order Number: #{{$order->invoice_id}}</h3>
@@ -57,22 +57,22 @@
             </tr>
         </tbody>
     </table>
-    
+
     <table style="padding:10px 30px;margin:0 auto;text-align:center !important">
         <tbody>
             <tr>
                 <td>
-                    <ul style="padding:0 !important">                       
+                    <ul style="padding:0 !important">
         				<li style="list-style: none; margin: 0 5px; height: 40px; width: 40px; text-align: center; line-height: 40px; background: #4551F7; border-radius: 50px;float:left !important"><a href="https://www.facebook.com/websolutionitcom"><img src="https://giftshopbd.websolutionit.com/public/frontEnd/images/facebook-f-brands.png"  style="margin-top: 8px;height: 25px;" /></a></li>
-        				                    
-        				<li style="list-style: none; margin: 0 5px; height: 40px; width: 40px; text-align: center; line-height: 40px; background: #4DBC60; border-radius: 50px;float:left !important"><a href="https://wa.link/zw696d"><img src="https://giftshopbd.websolutionit.com/public/frontEnd/images/whatsapp-brands.png" style="margin-top: 8px;height: 25px;" /></a></li>
+
+        				<li style="list-style: none; margin: 0 5px; height: 40px; width: 40px; text-align: center; line-height: 40px; background: #fe88af; border-radius: 50px;float:left !important"><a href="https://wa.link/zw696d"><img src="https://giftshopbd.websolutionit.com/public/frontEnd/images/whatsapp-brands.png" style="margin-top: 8px;height: 25px;" /></a></li>
         			</ul>
     			</td>
 			</tr>
         </tbody>
     </table>
      <table class="body-wrap" style="background:#fff; width: 100%; margin: 0;">
-        <tbody style="background:#4DBC60;">
+        <tbody style="background:#fe88af;">
             <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box;  margin: 0;border:0">
                 <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; margin: 0;">
                    <p style="color:#fff;text-align:center;padding:20px 0;font-size:15px;letter-spacing:2px">@copyright {{date('Y')}} Giftshopbd</p>
@@ -80,7 +80,7 @@
             </tr>
         </tbody>
     </table>
-    
+
 </div>
 </div>
 </body>
