@@ -35,7 +35,10 @@ use App\Http\Controllers\Admin\SizeController;
 use App\Http\Controllers\Admin\TagManagerController;
 use App\Http\Controllers\Auth\LoginController;
 
-Auth::routes();
+Auth::routes([
+    'login' => false,
+    'register' => false,
+]);
 
 Route::get('/cc', function() {
     Artisan::call('config:clear');
@@ -456,12 +459,12 @@ Route::group(['namespace'=>'Admin','middleware' => ['auth','lock','check_refer']
 // Block default /register and /login
 // ------------------------------
 Route::any('/register', fn() => abort(404));
-// Route::any('/login', fn() => abort(404));
+Route::any('/login', fn() => abort(404));
 
 // ------------------------------
 // Admin login routes (guest only)
 // ------------------------------
-// Route::middleware('guest:web')->group(function () {
-//     Route::get('/deepanel/login', [LoginController::class, 'showLoginForm'])->name('admin.login');
-//     Route::post('/deepanel/login', [LoginController::class, 'login']);
-// });
+Route::middleware('guest:web')->group(function () {
+    Route::get('/deepanel/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/deepanel/login', [LoginController::class, 'login']);
+});
