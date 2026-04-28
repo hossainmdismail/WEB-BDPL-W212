@@ -82,7 +82,12 @@
 
                         <tbody>
                             @foreach ($show_data as $key => $value)
-                                <tr>
+                                <tr data-order-id="{{ $value->id }}"
+                                    data-invoice="{{ $value->invoice_id }}"
+                                    data-name="{{ $value->shipping ? $value->shipping->name : '' }}"
+                                    data-phone="{{ $value->shipping ? $value->shipping->phone : '' }}"
+                                    data-address="{{ $value->shipping ? $value->shipping->address : '' }}"
+                                    data-amount="{{ $value->amount }}">
                                     <td><input type="checkbox" class="checkbox" value="{{ $value->id }}"></td>
                                     <td>{{ $loop->iteration }}</td>
                                     <td>
@@ -227,6 +232,39 @@
         </div>
     </div>
     <!-- Assign User End-->
+    <div class="modal fade" id="courierConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Send To Steadfast</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Please check the selected order information before sending to courier.</p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Address</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="courierConfirmRows"></tbody>
+                        </table>
+                    </div>
+                    <small class="text-muted d-block mt-3" id="courierConfirmNote"></small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-warning" id="confirmCourierSubmit">Confirm Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Courier Confirm End-->
     <!-- pathao coureir start -->
     <div class="modal fade" id="pathao" tabindex="-1">
         <div class="modal-dialog">
@@ -314,6 +352,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
+            let courierRequest = null;
+
             @php
                 $canResendSms = auth()->check() && auth()->user()->hasAnyRole(['Super Admin', 'super admin', 'super-admin', 'Super admin']);
             @endphp
@@ -488,22 +528,71 @@
             // multiple courier
             $(document).on('click', '.multi_order_courier', function(e) {
                 e.preventDefault();
-                var url = $(this).attr('href');
-                var order = $('input.checkbox:checked').map(function() {
+                const url = $(this).attr('href');
+                const order = $('input.checkbox:checked').map(function() {
                     return $(this).val();
                 });
-                var order_ids = order.get();
+                const order_ids = order.get();
 
                 if (order_ids.length == 0) {
                     toastr.error('Please Select An Order First !');
                     return;
                 }
 
+                let rowsHtml = '';
+                let incompleteCount = 0;
+
+                order_ids.forEach(function(orderId) {
+                    const row = $('tr[data-order-id="' + orderId + '"]');
+                    const invoice = row.data('invoice') || '';
+                    const name = row.data('name') || '';
+                    const phone = row.data('phone') || '';
+                    const address = row.data('address') || '';
+                    const amount = row.data('amount') || '';
+
+                    if (!name || !phone || !address) {
+                        incompleteCount++;
+                    }
+
+                    rowsHtml += `<tr>
+                        <td>#${invoice}</td>
+                        <td>${name}</td>
+                        <td>${phone}</td>
+                        <td>${address}</td>
+                        <td>৳${amount}</td>
+                    </tr>`;
+                });
+
+                $('#courierConfirmRows').html(rowsHtml);
+                $('#courierConfirmNote').text(
+                    incompleteCount > 0
+                        ? incompleteCount + ' selected order has missing customer info. Please review before sending.'
+                        : 'All selected orders look ready for courier.'
+                );
+
+                courierRequest = {
+                    url: url,
+                    order_ids: order_ids
+                };
+
+                const courierModal = new bootstrap.Modal(document.getElementById('courierConfirmModal'));
+                courierModal.show();
+            });
+
+            $(document).on('click', '#confirmCourierSubmit', function() {
+                if (!courierRequest) {
+                    toastr.error('No order selected for courier.');
+                    return;
+                }
+
+                const button = $(this);
+                button.prop('disabled', true).text('Sending...');
+
                 $.ajax({
                     type: 'GET',
-                    url: url,
+                    url: courierRequest.url,
                     data: {
-                        order_ids
+                        order_ids: courierRequest.order_ids
                     },
                     success: function(res) {
                         if (res.status == 'success') {
@@ -513,9 +602,29 @@
                         } else {
                             toastr.error(res.message || 'Failed something wrong');
                         }
+                    },
+                    error: function(xhr) {
+                        let message = 'Courier request failed.';
+
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            message = xhr.responseJSON.message;
+                        } else if (xhr.responseText) {
+                            message = xhr.responseText;
+                        }
+
+                        toastr.error(message);
+                    },
+                    complete: function() {
+                        button.prop('disabled', false).text('Confirm Send');
                     }
                 });
+            });
 
+            $('#courierConfirmModal').on('hidden.bs.modal', function() {
+                courierRequest = null;
+                $('#courierConfirmRows').html('');
+                $('#courierConfirmNote').text('');
+                $('#confirmCourierSubmit').prop('disabled', false).text('Confirm Send');
             });
         })
     </script>

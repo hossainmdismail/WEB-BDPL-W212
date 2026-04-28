@@ -525,6 +525,13 @@ class OrderController extends Controller
             ];
 
             try {
+                Log::info('Steadfast courier request', [
+                    'url' => rtrim($courier_info->url, '/') . '/create_order',
+                    'order_id' => $order->id,
+                    'invoice' => $order->invoice_id,
+                    'payload' => $consignmentData,
+                ]);
+
                 $client = new Client();
                 $response = $client->post(rtrim($courier_info->url, '/') . '/create_order', [
                     'json' => $consignmentData,
@@ -537,6 +544,12 @@ class OrderController extends Controller
                 ]);
 
                 $responseData = json_decode($response->getBody(), true);
+                Log::info('Steadfast courier response', [
+                    'order_id' => $order->id,
+                    'invoice' => $order->invoice_id,
+                    'status_code' => $response->getStatusCode(),
+                    'response' => $responseData,
+                ]);
                 $apiStatus = $responseData['status'] ?? $response->getStatusCode();
 
                 if ((int) $apiStatus === 200) {
@@ -549,6 +562,11 @@ class OrderController extends Controller
                 $message = $responseData['message'] ?? 'Steadfast API request failed.';
                 return response()->json(['status' => 'failed', 'message' => $message]);
             } catch (\Throwable $e) {
+                Log::error('Steadfast courier exception', [
+                    'order_id' => $order->id,
+                    'invoice' => $order->invoice_id,
+                    'message' => $e->getMessage(),
+                ]);
                 return response()->json(['status' => 'failed', 'message' => $e->getMessage()]);
             }
         }
