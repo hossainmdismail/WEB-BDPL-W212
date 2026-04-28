@@ -17,6 +17,10 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Courierapi;
+use App\Models\SmsGateway;
+use App\Models\GeneralSetting;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Session;
 use Cart;
 use Toastr;
@@ -24,6 +28,7 @@ use Mail;
 
 class OrderController extends Controller
 {
+    //Check this controller and index function
     public function index($slug,Request $request){
         if($slug == 'all'){
             $order_status = (object) [
@@ -61,8 +66,8 @@ class OrderController extends Controller
             $pathaostore = [];
         }
         return view('backEnd.order.index',compact('show_data','order_status','users', 'steadfast','pathaostore','pathaocities'));
-    } 
-    
+    }
+
     public function pathaocity(Request $request)
     {
         $pathao_info = Courierapi::where(['status'=>1, 'type'=>'pathao'])->select('id', 'type', 'url', 'token', 'status')->first();
@@ -73,7 +78,7 @@ class OrderController extends Controller
         } else {
             return response()->json([]);
         }
-    } 
+    }
     public function pathaozone(Request $request)
     {
         $pathao_info = Courierapi::where(['status'=>1, 'type'=>'pathao'])->select('id', 'type', 'url', 'token', 'status')->first();
@@ -85,7 +90,7 @@ class OrderController extends Controller
              return response()->json([]);
         }
     }
-    
+
     public function order_pathao(Request $request)
     {
         $orders_id = $request->order_ids;
@@ -133,22 +138,22 @@ class OrderController extends Controller
 
         }
     }
-    
+
     public function invoice($invoice_id){
         $order = Order::where(['invoice_id'=>$invoice_id])->with('orderdetails','payment','shipping','customer')->firstOrFail();
         return view('backEnd.order.invoice',compact('order'));
     }
-    
+
     public function process($invoice_id){
         $data = Order::where(['invoice_id'=>$invoice_id])->select('id','invoice_id','order_status')->with('orderdetails')->first();
         $shippingcharge = ShippingCharge::where('status',1)->get();
         return view('backEnd.order.process',compact('data','shippingcharge'));
     }
-    
+
     public function order_process(Request $request)
     {
-
-        $link = OrderStatus::find($request->status)->slug;
+        $targetStatus = OrderStatus::find($request->status);
+        $link = $targetStatus->slug;
         $order = Order::find($request->id);
         $courier = $order->order_status;
         $order->order_status = $request->status;
@@ -196,7 +201,7 @@ class OrderController extends Controller
                         'Accept' => 'application/json',
                     ],
                 ]);
-                
+
                 $responseData = json_decode($response->getBody(), true);
             } else {
                 return "ok";
@@ -207,7 +212,7 @@ class OrderController extends Controller
         Toastr::success('Success', 'Order status change successfully');
         return redirect('admin/order/' . $link);
     }
-    
+
     public function destroy(Request $request){
         $order = Order::where('id',$request->id)->delete();
         $order_details = OrderDetails::where('order_id',$request->id)->delete();
@@ -216,17 +221,17 @@ class OrderController extends Controller
         Toastr::success('Success','Order delete success successfully');
         return redirect()->back();
     }
-    
+
     public function order_assign(Request $request){
         $products = Order::whereIn('id', $request->input('order_ids'))->update(['user_id' => $request->user_id]);
         return response()->json(['status'=>'success','message'=>'Order user id assign']);
     }
-    
+
     public function order_status(Request $request){
-        $orders = Order::whereIn('id', $request->input('order_ids'))->update(['order_status' => $request->order_status]);
+        $targetStatus = OrderStatus::find($request->order_status);
+        $orders = Order::whereIn('id', $request->input('order_ids'))->with('shipping')->get();
 
         if($request->order_status == 5){
-            $orders = Order::whereIn('id', $request->input('order_ids'))->get();
             foreach($orders as $order){
                 $orders_details = OrderDetails::select('id','order_id','product_id')->where('order_id',$order->id)->get();
                 foreach($orders_details as $order_details){
@@ -236,9 +241,242 @@ class OrderController extends Controller
                 }
             }
         }
+
+        foreach ($orders as $order) {
+            $order->order_status = $request->order_status;
+            $order->save();
+        }
+
         return response()->json(['status'=>'success','message'=>'Order status change successfully']);
     }
-    
+
+    public function send_sms(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'sms_type' => 'required|in:confirm,complete',
+        ]);
+
+        $order = Order::with('shipping', 'status')->findOrFail($request->id);
+        $smsType = $request->sms_type;
+        $alreadySent = $smsType === 'confirm'
+            ? (int) $order->confirm_sms_sent === 1
+            : (int) $order->complete_sms_sent === 1;
+
+        if ($alreadySent && !$this->canResendSms()) {
+            Toastr::warning('This SMS was already sent. Only super admin can resend it.', 'SMS blocked');
+            return redirect()->back();
+        }
+
+        $smsResult = $smsType === 'confirm'
+            ? $this->sendOrderConfirmationSms($order, $order->status, true)
+            : $this->sendCompletedOrderSms($order, $order->status, true);
+
+        $smsLabel = $smsType === 'confirm' ? 'Confirm SMS' : 'Complete SMS';
+
+        if (!$smsResult['attempted']) {
+            Toastr::warning('SMS gateway or customer phone not found.', 'SMS not sent');
+            return redirect()->back();
+        }
+
+        if ($smsResult['success']) {
+            Toastr::success($smsLabel . ' sent successfully.', 'Success');
+            return redirect()->back();
+        }
+
+        Toastr::error($smsResult['message'] ?: ($smsLabel . ' could not be sent.'), 'SMS failed');
+        return redirect()->back();
+    }
+
+    private function canResendSms()
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return false;
+        }
+
+        foreach (['Super Admin', 'super admin', 'super-admin', 'Super admin'] as $roleName) {
+            if ($user->hasRole($roleName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isCompletedStatus($status)
+    {
+        if (!$status) {
+            return false;
+        }
+
+        $slug = strtolower((string) $status->slug);
+        $name = strtolower((string) $status->name);
+
+        return in_array($slug, ['complete', 'completed']) || str_contains($name, 'complete');
+    }
+
+    private function sendCompletedOrderSms($order, $status, $forceSend = false)
+    {
+        if ((!$forceSend && !$this->isCompletedStatus($status)) || (!$forceSend && (int) $order->complete_sms_sent === 1)) {
+            return ['attempted' => false, 'success' => false, 'message' => null];
+        }
+
+        $phone = $order->shipping ? trim((string) $order->shipping->phone) : '';
+        $sms_gateway = SmsGateway::where(['status' => 1])->first();
+
+        if ($phone === '' || !$sms_gateway) {
+            return ['attempted' => false, 'success' => false, 'message' => null];
+        }
+
+        $customerName = $order->shipping ? trim((string) $order->shipping->name) : 'Customer';
+        $message = "Dear {$customerName}, your order {$order->invoice_id} is completed.";
+        $smsResult = $this->sendSms($sms_gateway, $phone, $message);
+
+        if ($smsResult['success']) {
+            $order->complete_sms_sent = 1;
+            $order->save();
+        }
+
+        return $smsResult;
+    }
+
+    private function isConfirmationStatus($status)
+    {
+        if (!$status) {
+            return false;
+        }
+
+        $slug = strtolower((string) $status->slug);
+        $name = strtolower((string) $status->name);
+
+        foreach (['process', 'processing', 'confirm', 'confirmed', 'accept', 'accepted'] as $keyword) {
+            if (str_contains($slug, $keyword) || str_contains($name, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function sendOrderConfirmationSms($order, $targetStatus, $forceSend = false)
+    {
+        if (
+            (!$forceSend && !$this->isConfirmationStatus($targetStatus)) ||
+            (!$forceSend && (int) $order->confirm_sms_sent === 1)
+        ) {
+            return ['attempted' => false, 'success' => false, 'message' => null];
+        }
+
+        $sms_gateway = SmsGateway::where(['status' => 1, 'order' => 1])->first();
+        $phone = $order->shipping ? trim((string) $order->shipping->phone) : '';
+
+        if (!$sms_gateway || $phone === '') {
+            return ['attempted' => false, 'success' => false, 'message' => null];
+        }
+
+        $siteSetting = GeneralSetting::where('status', 1)->first();
+        $customerName = $order->shipping ? trim((string) $order->shipping->name) : 'Customer';
+        $template = trim((string) $sms_gateway->order_confirm_message);
+
+        if ($template === '') {
+            $template = 'প্রিয় {name}, আপনার অর্ডারটি confirm করা হয়েছে। Order ID: {invoice_id}. ধন্যবাদ {site_name} এর সাথে থাকার জন্য।';
+        }
+
+        $message = strtr($template, [
+            '{name}' => $customerName,
+            '{invoice_id}' => (string) $order->invoice_id,
+            '{status}' => (string) $targetStatus->name,
+            '{site_name}' => $siteSetting->name ?? 'our store',
+        ]);
+
+        $smsResult = $this->sendSms($sms_gateway, $phone, $message);
+
+        if ($smsResult['success']) {
+            $order->confirm_sms_sent = 1;
+            $order->save();
+        }
+
+        return $smsResult;
+    }
+
+    private function sendSms($smsGateway, $phone, $message)
+    {
+        $number = $this->normalizeBdPhone($phone);
+        $data = [
+            'api_key' => $smsGateway->api_key,
+            'senderid' => $smsGateway->serderid,
+            'number' => $number,
+            'message' => $message,
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $smsGateway->url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        Log::info('Order SMS API response', [
+            'url' => $smsGateway->url,
+            'number' => $number,
+            'response' => $response,
+            'error' => $curlError,
+        ]);
+
+        if ($response === false || $curlError !== '') {
+            return [
+                'attempted' => true,
+                'success' => false,
+                'message' => $curlError !== '' ? $curlError : 'SMS request failed.',
+            ];
+        }
+
+        $decodedResponse = json_decode($response, true);
+
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decodedResponse)) {
+            $responseCode = (string) ($decodedResponse['response_code'] ?? '');
+            $successMessage = trim((string) ($decodedResponse['success_message'] ?? ''));
+            $errorMessage = trim((string) ($decodedResponse['error_message'] ?? ''));
+            $success = in_array($responseCode, ['202', '200', '0'], true) || $successMessage !== '';
+
+            return [
+                'attempted' => true,
+                'success' => $success,
+                'message' => $success ? $successMessage : ($errorMessage ?: 'SMS provider rejected the request.'),
+            ];
+        }
+
+        return [
+            'attempted' => true,
+            'success' => true,
+            'message' => null,
+        ];
+    }
+
+    private function normalizeBdPhone($phone)
+    {
+        $phone = preg_replace('/\D+/', '', (string) $phone);
+
+        if (str_starts_with($phone, '880')) {
+            return $phone;
+        }
+
+        if (str_starts_with($phone, '0')) {
+            return '88' . $phone;
+        }
+
+        if (str_starts_with($phone, '1')) {
+            return '880' . $phone;
+        }
+
+        return $phone;
+    }
+
     public function bulk_destroy(Request $request){
         $orders_id = $request->order_ids;
         foreach($orders_id as $order_id){
@@ -257,46 +495,72 @@ class OrderController extends Controller
     public function bulk_courier($slug, Request $request)
     {
         $courier_info = Courierapi::where(['status' => 1, 'type' => $slug])->first();
-        if ($courier_info) {
-            $orders_id = $request->order_ids;
-            foreach ($orders_id as $order_id) {
-                $order = Order::find($order_id);
-                $courier = $order->order_status;
-                if ($request->status == 5 && $courier != 5) {
-                    $consignmentData = [
-                        'invoice' => $order->invoice_id,
-                        'recipient_name' => $order->shipping ? $order->shipping->name : 'InboxHat',
-                        'recipient_phone' => $order->shipping ? $order->shipping->phone : '01750578495',
-                        'recipient_address' => $order->shipping ? $order->shipping->address : '01750578495',
-                        'cod_amount' => $order->amount
-                    ];
-                    $client = new Client();
-                    $response = $client->post('$courier_info->url', [
-                        'json' => $consignmentData,
-                        'headers' => [
-                            'Api-Key' => '$courier_info->api_key',
-                            'Secret-Key' => '$courier_info->secret_key',
-                            'Accept' => 'application/json',
-                        ],
-                    ]);
-
-                    $responseData = json_decode($response->getBody(), true);
-                    if ($responseData['status'] == 200) {
-                        $message = 'Your order place to courier successfully';
-                        $status = 'success';
-                        $order->order_status = 4;
-                        $order->save();
-                    } else {
-                        $message = 'Your order place to courier failed';
-                        $status = 'failed';
-                    }
-                    return response()->json(['status' => $status, 'message' => $message]);
-                }
-                
-            }
-        } else {
-            return "stop";
+        if (!$courier_info) {
+            return response()->json(['status' => 'failed', 'message' => 'Steadfast courier is not configured.']);
         }
+
+        $orders_id = $request->order_ids ?? [];
+
+        if (count($orders_id) === 0) {
+            return response()->json(['status' => 'failed', 'message' => 'No order selected.']);
+        }
+
+        $successCount = 0;
+
+        foreach ($orders_id as $order_id) {
+            $order = Order::with('shipping')->find($order_id);
+
+            if (!$order) {
+                continue;
+            }
+
+            $consignmentData = [
+                'invoice' => $order->invoice_id,
+                'recipient_name' => $order->shipping ? $order->shipping->name : 'InboxHat',
+                'recipient_phone' => $order->shipping ? $order->shipping->phone : '01750578495',
+                'recipient_address' => $order->shipping ? $order->shipping->address : 'Dhaka',
+                'cod_amount' => $order->amount,
+                'note' => 'Handle with care',
+                'item_description' => 'Order #' . $order->invoice_id,
+            ];
+
+            try {
+                $client = new Client();
+                $response = $client->post(rtrim($courier_info->url, '/') . '/create_order', [
+                    'json' => $consignmentData,
+                    'headers' => [
+                        'Api-Key' => $courier_info->api_key,
+                        'Secret-Key' => $courier_info->secret_key,
+                        'Accept' => 'application/json',
+                        'Content-Type' => 'application/json',
+                    ],
+                ]);
+
+                $responseData = json_decode($response->getBody(), true);
+                $apiStatus = $responseData['status'] ?? $response->getStatusCode();
+
+                if ((int) $apiStatus === 200) {
+                    $successCount++;
+                    $order->order_status = 4;
+                    $order->save();
+                    continue;
+                }
+
+                $message = $responseData['message'] ?? 'Steadfast API request failed.';
+                return response()->json(['status' => 'failed', 'message' => $message]);
+            } catch (\Throwable $e) {
+                return response()->json(['status' => 'failed', 'message' => $e->getMessage()]);
+            }
+        }
+
+        if ($successCount === 0) {
+            return response()->json(['status' => 'failed', 'message' => 'No order was sent to courier.']);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $successCount . ' order sent to courier successfully.',
+        ]);
     }
     public function stock_report(Request $request){
         $products = Product::select('id', 'name','new_price','stock')
@@ -346,7 +610,7 @@ class OrderController extends Controller
         $shippingcharge = ShippingCharge::where('status',1)->get();
         return view('backEnd.order.create',compact('products','cartinfo','shippingcharge'));
     }
-    
+
     public function order_store(Request $request){
         $this->validate($request,[
             'name'=>'required',
@@ -365,7 +629,7 @@ class OrderController extends Controller
         $subtotal = str_replace('.00', '',$subtotal);
         $discount = Session::get('pos_discount')+Session::get('product_discount');
         $shippingfee  = ShippingCharge::find($request->area);
-        
+
         $exits_customer = Customer::where('phone',$request->phone)->select('phone','id')->first();
         if($exits_customer){
             $customer_id = $exits_customer->id;
@@ -381,7 +645,7 @@ class OrderController extends Controller
             $store->save();
             $customer_id = $store->id;
         }
- 
+
          // order data save
         $order                   = new Order();
         $order->invoice_id       = rand(11111,99999);
@@ -530,7 +794,7 @@ class OrderController extends Controller
         $cartinfo  = Cart::instance('pos_shopping')->content();
         return view('backEnd.order.edit',compact('products','cartinfo','shippingcharge','shippinginfo','order'));
     }
-    
+
     public function order_update(Request $request){
         $this->validate($request,[
             'name'=>'required',
@@ -565,7 +829,7 @@ class OrderController extends Controller
             $store->save();
             $customer_id = $store->id;
         }
- 
+
          // order data save
         $order                   =  Order::where('id',$request->order_id)->first();
         $order->invoice_id       = rand(11111,99999);
@@ -617,7 +881,7 @@ class OrderController extends Controller
                 $order_details->qty              =   $cart->qty;
                 $order_details->save();
             }
-            
+
         }
         Cart::instance('pos_shopping')->destroy();
         Session::forget('pos_shipping');

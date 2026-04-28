@@ -43,13 +43,13 @@ class ApiIntegrationController extends Controller
     
     public function sms_update(Request $request)
     {
-      
         $update_data = SmsGateway::find($request->id);
         $input = $request->all();
         $input['status'] = $request->status?1:0;
         $input['order'] = $request->order?1:0;
         $input['forget_pass'] = $request->forget_pass?1:0;
         $input['password_g'] = $request->password_g?1:0;
+        $input['order_confirm_message'] = $request->order_confirm_message;
         $update_data->update($input);
         
         Toastr::success('Success','Data update successfully');

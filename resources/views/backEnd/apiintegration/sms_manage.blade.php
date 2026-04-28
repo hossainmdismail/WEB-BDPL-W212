@@ -97,6 +97,19 @@
               </div>
             </div>
             <!-- col end -->
+            <div class="col-sm-12">
+              <div class="form-group mb-3">
+                <label for="order_confirm_message" class="form-label">Order Confirm SMS</label>
+                <textarea class="form-control @error('order_confirm_message') is-invalid @enderror" name="order_confirm_message" id="order_confirm_message" rows="4" placeholder="Apnar order ti confirm kora hoyeche. Dhonnobad.">{{ old('order_confirm_message', $sms->order_confirm_message) }}</textarea>
+                <small class="text-muted">You can use: <code>{name}</code>, <code>{invoice_id}</code>, <code>{status}</code>, <code>{site_name}</code></small>
+                @error('order_confirm_message')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </div>
+            </div>
+            <!-- col end -->
             <div class="col-sm-3 mb-3">
               <div class="form-group">
                 <label for="forget_pass" class="d-block">Forgot password </label>

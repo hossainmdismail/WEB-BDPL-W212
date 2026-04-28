@@ -93,6 +93,14 @@
                                                 title="Process"><i class="fe-settings"></i></a>
                                             <a href="{{ route('admin.order.edit', ['invoice_id' => $value->invoice_id]) }}"
                                                 title="Edit"><i class="fe-edit"></i></a>
+                                            <button type="button" title="Send SMS" class="sms-modal-trigger"
+                                                data-bs-toggle="modal" data-bs-target="#sendSmsModal"
+                                                data-order-id="{{ $value->id }}"
+                                                data-invoice-id="{{ $value->invoice_id }}"
+                                                data-confirm-sent="{{ (int) $value->confirm_sms_sent }}"
+                                                data-complete-sent="{{ (int) $value->complete_sms_sent }}">
+                                                <i class="fe-message-square"></i>
+                                            </button>
                                             <form method="post" action="{{ route('admin.order.destroy') }}"
                                                 class="d-inline">
                                                 @csrf
@@ -155,6 +163,41 @@
         </div>
     </div>
     <!-- Assign User End-->
+
+    <div class="modal fade" id="sendSmsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Send SMS</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('admin.order.send_sms') }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <input type="hidden" name="id" id="sms_order_id">
+                        <div class="form-group mb-3">
+                            <label class="form-label">Order</label>
+                            <input type="text" class="form-control" id="sms_invoice_id" readonly>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="sms_type" class="form-label">SMS Type</label>
+                            <select name="sms_type" id="sms_type" class="form-control" required>
+                                <option value="">Select..</option>
+                                <option value="confirm">Confirm SMS</option>
+                                <option value="complete">Complete SMS</option>
+                            </select>
+                        </div>
+                        <small class="text-muted" id="sms_status_note"></small>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-success">Send SMS</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Send SMS End-->
 
     <!-- Assign User End -->
     <div class="modal fade" id="changeStatus" tabindex="-1">
@@ -271,6 +314,37 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
+            @php
+                $canResendSms = auth()->check() && auth()->user()->hasAnyRole(['Super Admin', 'super admin', 'super-admin', 'Super admin']);
+            @endphp
+            const canResendSms = @json($canResendSms);
+
+            $(document).on('click', '.sms-modal-trigger', function() {
+                const orderId = $(this).data('order-id');
+                const invoiceId = $(this).data('invoice-id');
+                const confirmSent = Number($(this).data('confirm-sent')) === 1;
+                const completeSent = Number($(this).data('complete-sent')) === 1;
+
+                $('#sms_order_id').val(orderId);
+                $('#sms_invoice_id').val('#' + invoiceId);
+                $('#sms_type').val('');
+                $('#sms_type option[value="confirm"]').prop('disabled', confirmSent && !canResendSms);
+                $('#sms_type option[value="complete"]').prop('disabled', completeSent && !canResendSms);
+
+                let notes = [];
+                if (confirmSent) {
+                    notes.push('Confirm SMS already sent');
+                }
+                if (completeSent) {
+                    notes.push('Complete SMS already sent');
+                }
+                if (!canResendSms && notes.length > 0) {
+                    notes.push('Only super admin can resend sent SMS');
+                }
+
+                $('#sms_status_note').text(notes.join(' | '));
+            });
+
             $(".checkall").on('change', function() {
                 $(".checkbox").prop('checked', $(this).is(":checked"));
             });
@@ -305,7 +379,7 @@
                             window.location.reload();
 
                         } else {
-                            toastr.error('Failed something wrong');
+                            toastr.error(res.message || 'Failed something wrong');
                         }
                     }
                 });
@@ -342,7 +416,7 @@
                             window.location.reload();
 
                         } else {
-                            toastr.error('Failed something wrong');
+                            toastr.error(res.message || 'Failed something wrong');
                         }
                     }
                 });
@@ -437,7 +511,7 @@
                             window.location.reload();
 
                         } else {
-                            toastr.error('Failed something wrong');
+                            toastr.error(res.message || 'Failed something wrong');
                         }
                     }
                 });
